@@ -5,12 +5,16 @@
 
 // https://expressjs.com/en/resources/middleware/body-parser.html
 
-require("dotenv").config();
+import dotenv from "dotenv";
+import express from "express";
+import Stripe from "stripe";
+import bodyParser from "body-parser";
+import { doc, setDoc } from "firebase/firestore";
+import { db } from "./firebaseConfig.js";
 
-const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
-const bodyParser = require("body-parser");
-const express = require("express");
+dotenv.config();
 
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const app = express();
 app.use(express.static("public"));
 
@@ -25,8 +29,6 @@ const DOMAIN = "http://localhost:5173";
 
 // https://docs.stripe.com/checkout/fulfillment
 async function fulfillCheckout(session) {
-  const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
-
   console.log("Fulfilling Checkout Session: ", session.id);
 
   // TODO: Make this function safe to run multiple times,
@@ -49,6 +51,13 @@ async function fulfillCheckout(session) {
       session.metadata.firstName,
       session.metadata.lastName
     );
+    // Firstore how to add doc: https://firebase.google.com/docs/firestore/manage-data/add-data
+    await setDoc(doc(db, "cities", "LA"), {
+      name: "Los Angeles",
+      state: "CA",
+      country: "USA",
+      test: "Firebase env keys baby",
+    });
   }
 }
 

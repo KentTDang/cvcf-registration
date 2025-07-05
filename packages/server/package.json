@@ -12,6 +12,8 @@
   "dependencies": {
     "dotenv": "^17.0.0",
     "express": "^5.1.0",
+    "firebase": "^11.10.0",
     "stripe": "^18.2.1"
-  }
+  },
+  "type": "module"
 }
