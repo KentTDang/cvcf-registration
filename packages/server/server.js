@@ -47,16 +47,14 @@ async function fulfillCheckout(session) {
     // TODO: Record/save fulfillment status for this
     // Checkout Session
     console.log(
-      "YAY checkout session was successful, add db logic here, pretend we're adding: ",
+      "Checkout Session Fulfilled, metadata: ",
       session.metadata.firstName,
       session.metadata.lastName
     );
     // Firstore how to add doc: https://firebase.google.com/docs/firestore/manage-data/add-data
-    await setDoc(doc(db, "cities", "LA"), {
-      name: "Los Angeles",
-      state: "CA",
-      country: "USA",
-      test: "Firebase env keys baby",
+    await setDoc(doc(db, "Summer 2025", "some uuid that neeeds to be added"), {
+      name: session.metadata.firstName,
+      state: session.metadata.lastName,
     });
   }
 }
@@ -91,7 +89,6 @@ app.post("/webhook", jsonParser, async (request, response) => {
 
 app.post("/create-checkout-session", urlencodedParser, async (req, res) => {
   const { firstName, lastName } = req.body;
-  console.log("Passing in metadata: ", firstName, lastName);
   const session = await stripe.checkout.sessions.create({
     line_items: [
       {
