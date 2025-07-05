@@ -1,7 +1,7 @@
 import { Routes, Route, BrowserRouter } from "react-router-dom";
-import Home from "./components/Home";
-import Success from "./components/Success";
-import Cancel from "./components/Cancel";
+import Home from "./pages/Home";
+import Success from "./pages/Success";
+import Cancel from "./pages/Cancel";
 
 export const App = () => {
   return (
