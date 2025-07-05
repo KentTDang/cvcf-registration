@@ -1,3 +1,10 @@
+/**
+ *  How to parse our form data:
+ * {link: https://developer.mozilla.org/en-US/docs/Learn_web_development/Extensions/Forms/Sending_and_retrieving_form_data }
+ */
+
+// https://expressjs.com/en/resources/middleware/body-parser.html
+
 require("dotenv").config();
 
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
@@ -7,14 +14,20 @@ const express = require("express");
 const app = express();
 app.use(express.static("public"));
 
+// parse application/x-www-form-urlencoded
+const urlencodedParser = bodyParser.urlencoded();
+
+// parse application/json
+const jsonParser = bodyParser.raw({ type: "application/json" });
+
 const endpointSecret = process.env.STRIPE_WEBSOCKET_KEY;
 const DOMAIN = "http://localhost:5173";
 
 // https://docs.stripe.com/checkout/fulfillment
-async function fulfillCheckout(sessionId) {
+async function fulfillCheckout(session) {
   const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
-  console.log("Fulfilling Checkout Session: ", sessionId);
+  console.log("Fulfilling Checkout Session: ", session.id);
 
   // TODO: Make this function safe to run multiple times,
   // even concurrently, with the same session ID
@@ -22,44 +35,54 @@ async function fulfillCheckout(sessionId) {
   // TODO: Make sure fulfillment hasn't already been
   // performed for this Checkout Session
 
-  const checkoutSession = await stripe.checkout.sessions.retrieve(sessionId, {
+  const checkoutSession = await stripe.checkout.sessions.retrieve(session.id, {
     expand: ["line_items"],
   });
 
+  // TODO: Is unpaid to only status we need to account for?
   if (checkoutSession.payment_status !== "unpaid") {
     // TODO: Perform fulfillment of the line items
     // TODO: Record/save fulfillment status for this
     // Checkout Session
-    console.log("YAY checkout session was successful, add db logic here");
+    console.log(
+      "YAY checkout session was successful, add db logic here, pretend we're adding: ",
+      session.metadata.firstName,
+      session.metadata.lastName
+    );
   }
 }
-app.post(
-  "/webhook",
-  bodyParser.raw({ type: "application/json" }),
-  async (request, response) => {
-    const payload = request.body;
-    const sig = request.headers["stripe-signature"];
 
-    let event;
+app.post("/webhook", jsonParser, async (request, response) => {
+  const payload = request.body;
+  const sig = request.headers["stripe-signature"];
 
-    try {
-      event = stripe.webhooks.constructEvent(payload, sig, endpointSecret);
-    } catch (err) {
-      return response.status(400).send(`Webhook Error: ${err.message}`);
-    }
+  let event;
 
-    if (
-      event.type === "checkout.session.completed" ||
-      event.type === "checkout.session.async_payment_succeeded"
-    ) {
-      fulfillCheckout(event.data.object.id);
-    }
-
-    response.status(200).end();
+  try {
+    event = stripe.webhooks.constructEvent(payload, sig, endpointSecret);
+  } catch (err) {
+    return response.status(400).send(`Webhook Error: ${err.message}`);
   }
-);
 
-app.post("/create-checkout-session", async (req, res) => {
+  if (
+    event.type === "checkout.session.completed" ||
+    event.type === "checkout.session.async_payment_succeeded"
+  ) {
+    const session = event.data.object;
+    fulfillCheckout(session);
+    console.log(
+      "My webhook now sees the data: ",
+      session.metadata.firstName,
+      session.metadata.lastName
+    );
+  }
+
+  response.status(200).end();
+});
+
+app.post("/create-checkout-session", urlencodedParser, async (req, res) => {
+  const { firstName, lastName } = req.body;
+  console.log("Passing in metadata: ", firstName, lastName);
   const session = await stripe.checkout.sessions.create({
     line_items: [
       {
@@ -74,6 +97,7 @@ app.post("/create-checkout-session", async (req, res) => {
     mode: "payment",
     success_url: `${DOMAIN}/success`,
     cancel_url: `${DOMAIN}/cancel`,
+    metadata: { firstName, lastName },
   });
 
   res.redirect(303, session.url);
