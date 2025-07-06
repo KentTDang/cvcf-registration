@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { InputField } from "@/components/InputField/index";
 import { SelectField } from "@/components/SelectField";
+import { TextArea } from "@/components/TextArea";
 import { shirtSizes, genders } from "@/constants";
 
 export const Home = () => {
@@ -44,12 +45,6 @@ export const Home = () => {
         label="Genders"
         selectItems={genders}
       />
-      <InputField
-        label="Gender"
-        name="gender"
-        type="text"
-        placeholder="Gender"
-      />
 
       {/* CVCF Info */}
       <InputField
@@ -60,19 +55,17 @@ export const Home = () => {
       />
 
       {/* Medical Concerns */}
-      <InputField
+      <TextArea
         label="Medical Concerns"
-        type="text"
-        name="medicalConcerns"
-        placeholder="Do you have any medical concerns yes or no"
+        name="medicalConerns"
+        placeholder="Enter any medical conerns"
       />
 
       {/* Additional Concerns */}
-      <InputField
+      <TextArea
         label="Additional Concerns"
-        type="text"
         name="additionalConcerns"
-        placeholder="Enter additional concerns"
+        placeholder="Enter any additional conerns"
       />
 
       <Button type="submit">Checkout</Button>
