@@ -53,8 +53,11 @@ async function fulfillCheckout(session) {
     );
     // Firstore how to add doc: https://firebase.google.com/docs/firestore/manage-data/add-data
     await setDoc(doc(db, "Summer 2025", "some uuid that neeeds to be added"), {
-      name: session.metadata.firstName,
-      state: session.metadata.lastName,
+      firstName: session.metadata.firstName,
+      lastName: session.metadata.lastName,
+      email: session.metadata.email,
+      phoneNumber: session.metadata.phoneNumber,
+      daysAttending: session.metadata.daysAttending,
     });
   }
 }
@@ -88,7 +91,7 @@ app.post("/webhook", jsonParser, async (request, response) => {
 });
 
 app.post("/create-checkout-session", urlencodedParser, async (req, res) => {
-  const { firstName, lastName } = req.body;
+  const { firstName, lastName, email, phoneNumber, daysAttending } = req.body;
   const session = await stripe.checkout.sessions.create({
     line_items: [
       {
@@ -103,7 +106,7 @@ app.post("/create-checkout-session", urlencodedParser, async (req, res) => {
     mode: "payment",
     success_url: `${DOMAIN}/success`,
     cancel_url: `${DOMAIN}/cancel`,
-    metadata: { firstName, lastName },
+    metadata: { firstName, lastName, email, phoneNumber, daysAttending },
   });
 
   res.redirect(303, session.url);

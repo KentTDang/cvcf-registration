@@ -6,6 +6,13 @@ interface InputFieldProps {
   type: string;
   name: string;
   placeholder: string;
+  value: string;
+  onChange: (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
+  ) => void;
+  required?: boolean;
 }
 
 export const InputField = ({
@@ -13,11 +20,21 @@ export const InputField = ({
   type,
   name,
   placeholder,
+  value,
+  onChange,
+  required = false,
 }: InputFieldProps) => {
   return (
     <div className="grid w-full max-w-sm items-center gap-3">
       <Label htmlFor={name}>{label}</Label>
-      <Input type={type} name={name} placeholder={placeholder} />
+      <Input
+        type={type}
+        name={name}
+        placeholder={placeholder}
+        value={value}
+        onChange={onChange}
+        required={required}
+      />
     </div>
   );
 };
