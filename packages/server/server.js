@@ -1,3 +1,5 @@
+// stripe listen --forward-to localhost:4242/webhook
+
 /**
  *  How to parse our form data:
  * {link: https://developer.mozilla.org/en-US/docs/Learn_web_development/Extensions/Forms/Sending_and_retrieving_form_data }
@@ -31,21 +33,23 @@ const DOMAIN = "http://localhost:5173";
 async function fulfillCheckout(session) {
   console.log("Fulfilling Checkout Session: ", session.id);
 
-  // TODO: Make this function safe to run multiple times,
-  // even concurrently, with the same session ID
+  // TODO: Make this function safe to run multiple times, even concurrently, with the same session ID
+  // The above might be accounted for with the if statement on lines 78-81
 
-  // TODO: Make sure fulfillment hasn't already been
-  // performed for this Checkout Session
+  // TODO: Make sure fulfillment hasn't already been performed for this Checkout Session
+  // An approach might be to use our database, store the session id, and fulfillment status
 
   const checkoutSession = await stripe.checkout.sessions.retrieve(session.id, {
     expand: ["line_items"],
   });
 
-  // TODO: Is unpaid to only status we need to account for?
   if (checkoutSession.payment_status !== "unpaid") {
     // TODO: Perform fulfillment of the line items
-    // TODO: Record/save fulfillment status for this
-    // Checkout Session
+    // Not entirely sure what this means
+
+    // TODO: Record/save fulfillment status for this Checkout Session
+    // This means updating the session status in our db
+
     console.log(
       "Checkout Session Fulfilled, metadata: ",
       session.metadata.firstName,

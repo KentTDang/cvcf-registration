@@ -5,8 +5,16 @@ import { SelectField } from "@/components/SelectField";
 import { TextArea } from "@/components/TextArea";
 import { shirtSizes, genders } from "@/constants";
 
+interface FormValues {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phoneNumber: string;
+  daysAttending: string;
+}
+
 export const Home = () => {
-  const [formValues, setFormValues] = useState({
+  const [formValues, setFormValues] = useState<FormValues>({
     firstName: "",
     lastName: "",
     email: "",

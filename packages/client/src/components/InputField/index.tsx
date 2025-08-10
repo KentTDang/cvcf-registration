@@ -6,7 +6,7 @@ interface InputFieldProps {
   type: string;
   name: string;
   placeholder: string;
-  value: string;
+  value: string | number;
   onChange: (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
