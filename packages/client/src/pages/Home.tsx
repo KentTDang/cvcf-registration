@@ -38,8 +38,22 @@ export const Home = () => {
     formValues.phoneNumber.trim() !== "" &&
     formValues.daysAttending.trim() !== "";
 
+  const handleAutoFill = () => {
+    setFormValues({
+      firstName: "John",
+      lastName: "Cena",
+      email: "johncena@gmail.com",
+      phoneNumber: "123-456-7890",
+      daysAttending: "thursday",
+    });
+  };
+
   return (
     <form action="http://localhost:4242/create-checkout-session" method="POST">
+      {/* Super cool test button */}
+      <Button type="button" onClick={handleAutoFill}>
+        Autofill
+      </Button>
       {/* Personal Info */}
       <InputField
         label="First Name"
