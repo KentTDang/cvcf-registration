@@ -6,12 +6,19 @@
  */
 
 // https://expressjs.com/en/resources/middleware/body-parser.html
+// Firstore how to add doc: https://firebase.google.com/docs/firestore/manage-data/add-data
 
 import dotenv from "dotenv";
 import express from "express";
 import Stripe from "stripe";
 import bodyParser from "body-parser";
-import { doc, setDoc } from "firebase/firestore";
+import {
+  doc,
+  runTransaction,
+  serverTimestamp,
+  setDoc,
+  updateDoc,
+} from "firebase/firestore";
 import { db } from "./firebaseConfig.js";
 
 dotenv.config();
@@ -31,37 +38,61 @@ const DOMAIN = "http://localhost:5173";
 
 // https://docs.stripe.com/checkout/fulfillment
 async function fulfillCheckout(session) {
-  console.log("Fulfilling Checkout Session: ", session.id);
+  const claimRef = doc(db, "checkout_sessions", session.id);
 
-  // TODO: Make this function safe to run multiple times, even concurrently, with the same session ID
-  // The above might be accounted for with the if statement on lines 78-81
+  // Transactions allows us to check and mark our process in one step, avoiding race conditions
+  const alreadyHandled = await runTransaction(db, async (tx) => {
+    const snap = await tx.get(claimRef);
+    const status = snap.exists() ? snap.data().status : null;
 
-  // TODO: Make sure fulfillment hasn't already been performed for this Checkout Session
-  // An approach might be to use our database, store the session id, and fulfillment status
+    if (status === "complete" || status === "processing") return true;
 
-  const checkoutSession = await stripe.checkout.sessions.retrieve(session.id, {
-    expand: ["line_items"],
+    tx.set(
+      claimRef,
+      { status: "processing", updatedAt: serverTimestamp() },
+      { merge: true }
+    );
+    return false;
   });
 
-  if (checkoutSession.payment_status !== "unpaid") {
-    // TODO: Perform fulfillment of the line items
-    // Not entirely sure what this means
+  if (alreadyHandled) return;
 
-    // TODO: Record/save fulfillment status for this Checkout Session
-    // This means updating the session status in our db
-
-    console.log(
-      "Checkout Session Fulfilled, metadata: ",
-      session.metadata.firstName,
-      session.metadata.lastName
+  try {
+    const checkoutSession = await stripe.checkout.sessions.retrieve(
+      session.id,
+      {
+        expand: ["line_items"],
+      }
     );
-    // Firstore how to add doc: https://firebase.google.com/docs/firestore/manage-data/add-data
-    await setDoc(doc(db, "Summer 2025", "some uuid that neeeds to be added"), {
-      firstName: session.metadata.firstName,
-      lastName: session.metadata.lastName,
-      email: session.metadata.email,
-      phoneNumber: session.metadata.phoneNumber,
-      daysAttending: session.metadata.daysAttending,
+
+    if (checkoutSession.payment_status !== "unpaid") {
+      // Business Write: Store the user form info
+      await setDoc(
+        doc(db, "summer_2025", session.id),
+        {
+          firstName: session.metadata.firstName,
+          lastName: session.metadata.lastName,
+          email: session.metadata.email,
+          phoneNumber: session.metadata.phoneNumber,
+          daysAttending: session.metadata.daysAttending,
+          fulfilled: true,
+          fulfilledAt: serverTimestamp(),
+        },
+        { merge: true }
+      );
+
+      // Mark checkout session as complete
+      await updateDoc(claimRef, {
+        status: "complete",
+        updatedAt: serverTimestamp(),
+      });
+    }
+  } catch (error) {
+    // Mark checkout session as incomplete
+    await updateDoc(claimRef, {
+      status: "incomplete",
+      error: String(err),
+      updatedAt: serverTimestamp(),
     });
   }
 }

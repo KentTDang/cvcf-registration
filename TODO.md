@@ -16,3 +16,7 @@ Sever:
 
 General Questions:
 How do I deploy my client app, server, and stripe ws?
+Look into turborepo
+How can we mantain the state of the form if they hit checkout but then cancel
+
+What are atomic and idempotceny? These seem to be key features that i'm missing
