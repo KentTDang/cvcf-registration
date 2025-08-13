@@ -8,11 +8,12 @@ Client:
 
 Sever:
 
-- [ ] Make fulfillCheckout function safe to run mult. items concurrently with the same session ID
-- [ ] Check fulfillment for checkout sessions
-- [ ] Backup Database
-- [ ] Store paid or unpaid results in both database
-- [ ] Check and account for other payment status: server.js line 47
+- [x] Make fulfillCheckout function safe to run mult. items concurrently with the same session ID
+- [x] Check fulfillment for checkout sessions
+- [x] Backup Database
+- [x] Store paid or unpaid results in both database
+- [ ] TypeScript Conversion
+- [ ] Test
 
 General Questions:
 How do I deploy my client app, server, and stripe ws?

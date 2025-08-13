@@ -39,6 +39,7 @@ const DOMAIN = "http://localhost:5173";
 // https://docs.stripe.com/checkout/fulfillment
 async function fulfillCheckout(session) {
   const claimRef = doc(db, "checkout_sessions", session.id);
+  let isFulfilled = false;
 
   // Transactions allows us to check and mark our process in one step, avoiding race conditions
   const alreadyHandled = await runTransaction(db, async (tx) => {
@@ -55,6 +56,7 @@ async function fulfillCheckout(session) {
     return false;
   });
 
+  // This early return means that we did not store this attempt in our backup db
   if (alreadyHandled) return;
 
   try {
@@ -66,6 +68,8 @@ async function fulfillCheckout(session) {
     );
 
     if (checkoutSession.payment_status !== "unpaid") {
+      isFulfilled = true;
+
       // Business Write: Store the user form info
       await setDoc(
         doc(db, "summer_2025", session.id),
@@ -75,8 +79,8 @@ async function fulfillCheckout(session) {
           email: session.metadata.email,
           phoneNumber: session.metadata.phoneNumber,
           daysAttending: session.metadata.daysAttending,
-          fulfilled: true,
-          fulfilledAt: serverTimestamp(),
+          fulfilled: isFulfilled,
+          lastEventAt: serverTimestamp(),
         },
         { merge: true }
       );
@@ -86,14 +90,35 @@ async function fulfillCheckout(session) {
         status: "complete",
         updatedAt: serverTimestamp(),
       });
+    } else {
+      // Mark checkout session as incomplete due to an incorrect payment status
+      await updateDoc(claimRef, {
+        status: "incomplete",
+        error: "Checkout payment status is'unpaid'.",
+        updatedAt: serverTimestamp(),
+      });
     }
   } catch (error) {
     // Mark checkout session as incomplete
     await updateDoc(claimRef, {
       status: "incomplete",
-      error: String(err),
+      error: String(error),
       updatedAt: serverTimestamp(),
     });
+  } finally {
+    await setDoc(
+      doc(db, "summer_backup_2025", session.id),
+      {
+        firstName: session.metadata.firstName,
+        lastName: session.metadata.lastName,
+        email: session.metadata.email,
+        phoneNumber: session.metadata.phoneNumber,
+        daysAttending: session.metadata.daysAttending,
+        fulfilled: isFulfilled,
+        lastEventAt: serverTimestamp(),
+      },
+      { merge: true }
+    );
   }
 }
 
